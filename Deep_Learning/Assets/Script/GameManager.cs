@@ -10,7 +10,7 @@ enum Constant: int
        Right = 1, // %size == size-1 = bord
        Top = 4, // +4 > size = bord
        Bottom = -4,// -4 < 0 = bord
-       Stop = 99// -4 < 0 = bord
+       Stop = 0// -4 < 0 = bord
    
 }
 
@@ -98,18 +98,29 @@ public class GameManager : MonoBehaviour
 
     int CheckReward(int index)
     {
-        return rewards[index + (int)action[index]];
+        try
+        {
+            var actionToDo = (int)action[index];
+            var reward = rewards[index + actionToDo];
+            return reward;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("voici les index : " + index );
+            throw;
+        }
+        
     }
 
     void PolicyEvaluation()
     {
         Debug.Log("Play");
-        float delta = 0;
-        while( delta > 0.001)
+        float delta = 1.0f;
+        while( delta > 0.1f)
         {
+            delta = .0f;
             for(int i =0;i< 16; i++)
             {
-                
                 valueT1[i] = CheckReward(i) + gamma * valueT1[i + (int)action[i]];
                 delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
                 valueInstantT = valueT1;
