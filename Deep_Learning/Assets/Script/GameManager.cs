@@ -9,7 +9,8 @@ enum Constant: int
        Left = -1, // %size == 0 = bord
        Right = 1, // %size == size-1 = bord
        Top = 4, // +4 > size = bord
-       Bottom = -4// -4 < 0 = bord
+       Bottom = -4,// -4 < 0 = bord
+       Stop = 99// -4 < 0 = bord
    
 }
 
@@ -33,10 +34,7 @@ public class GameManager : MonoBehaviour
         for(int i = 0; i < 16; i++)
         {
             rewards[i] = 0;
-            if (i == 15)
-            {
-                rewards[i] = 1;
-            }
+            
 
             valueT1[i] = 0;
 
@@ -46,18 +44,24 @@ public class GameManager : MonoBehaviour
             // 2 RIGHT
             // 3 TOP
             // 4 BOTTOM
-            int index = Random.Range(0, values.Length);
+            int index = Random.Range(0, 4);
             Constant randomMove = (Constant)values.GetValue(index);
             
             while (!IsPossible(randomMove, i))
             {
-                 index = Random.Range(0, values.Length);
+                 index = Random.Range(0, 4);
                 randomMove = (Constant)values.GetValue(index);
             }
+
             action[i] = randomMove;
+            if (i == 15)
+            {
+                rewards[i] = 1;
+            }
             Debug.Log($"Index : {i} pour move {randomMove} ");
         }
         playerPos = 0;
+        action[15] = Constant.Stop;
 
     }
 
@@ -98,14 +102,17 @@ public class GameManager : MonoBehaviour
 
     void PolicyEvaluation()
     {
+        Debug.Log("Play");
         float delta = 0;
         while( delta > 0.001)
         {
             for(int i =0;i< 16; i++)
             {
-                var temp = valueInstantT[i];
+                
                 valueT1[i] = CheckReward(i) + gamma * valueT1[i + (int)action[i]];
-                delta = MathF.Max(delta,Mathf.Abs(temp-valueT1[i]));
+                delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
+                valueInstantT = valueT1;
+
             }
         }
     }
