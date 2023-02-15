@@ -30,7 +30,8 @@ public class GameManager : MonoBehaviour
     {
         //map = new GameObject[16];
         //reward = new int[16];
-        Array values = Enum.GetValues(typeof(Constant));
+        Constant[] values = { Constant.Bottom, Constant.Left, Constant.Right, Constant.Top, Constant.Stop };
+            
         for(int i = 0; i < 16; i++)
         {
             rewards[i] = 0;
@@ -112,13 +113,10 @@ public class GameManager : MonoBehaviour
                 valueT1[i] = CheckReward(i) + gamma * valueT1[i + (int)action[i]];
                 delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
                 valueInstantT = valueT1;
-
+                Debug.Log($"One loop done, here delta : {delta}");
             }
         }
     }
-
-    
-
 
     // Update is called once per frame
     void Update()
