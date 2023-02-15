@@ -19,8 +19,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] GameObject[] map;
     [SerializeField] int playerPos; //position du joueur
     [SerializeField] int[] rewards; // les recompenses
-    [SerializeField] int[] instantT;// valeur instant T
-    [SerializeField] int[] T1;// instant t +1 
+    [SerializeField] float[] valueInstantT;// valeur instant T
+    [SerializeField] float[] valueT1;// instant t +1 
     [SerializeField] Constant[] action;// move foreach case
     [SerializeField] float gamma;
 
@@ -38,9 +38,9 @@ public class GameManager : MonoBehaviour
                 rewards[i] = 1;
             }
 
-            T1[i] = 0;
+            valueT1[i] = 0;
 
-            instantT[i] = 0;
+            valueInstantT[i] = 0;
 
             // 1 LEFT
             // 2 RIGHT
@@ -90,9 +90,24 @@ public class GameManager : MonoBehaviour
         //Choose move random(0,4)
 
     }
-    void Policy()
-    {
 
+    int CheckReward(int index)
+    {
+        return rewards[index + (int)action[index]];
+    }
+
+    void PolicyEvaluation()
+    {
+        float delta = 0;
+        while( delta > 0.001)
+        {
+            for(int i =0;i< 16; i++)
+            {
+                var temp = valueInstantT[i];
+                valueT1[i] = CheckReward(i) + gamma * valueT1[i + (int)action[i]];
+                delta = MathF.Max(delta,Mathf.Abs(temp-valueT1[i]));
+            }
+        }
     }
 
     
@@ -101,6 +116,9 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            PolicyEvaluation();
+        }
     }
 }
