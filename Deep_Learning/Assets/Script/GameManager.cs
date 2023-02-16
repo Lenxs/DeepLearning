@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -24,14 +26,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] float[] valueT1;// instant t +1 
     [SerializeField] Constant[] action;// move foreach case
     [SerializeField] float gamma;
+    
+    Constant[] values = { Constant.Bottom, Constant.Left, Constant.Right, Constant.Top, Constant.Stop };
 
     // Start is called before the first frame update
     void Start()
     {
         //map = new GameObject[16];
         //reward = new int[16];
-        Constant[] values = { Constant.Bottom, Constant.Left, Constant.Right, Constant.Top, Constant.Stop };
-            
+        
         for(int i = 0; i < 16; i++)
         {
             rewards[i] = 0;
@@ -72,16 +75,16 @@ public class GameManager : MonoBehaviour
         switch (random)
         {
             case Constant.Top:
-                if (index + 4 > 15) return false;
+                if (index + 4 > 15 || map[index + 4].CompareTag("Obstacle")) return false;
                 break;
             case Constant.Bottom:
-                if (index - 4 < 0) return false;
+                if (index - 4 < 0 || map[index - 4].CompareTag("Obstacle")) return false;
                 break;
             case Constant.Left:
-                if (index%4==0) return false;
+                if (index%4 == 0 || map[index - 1].CompareTag("Obstacle")) return false;
                 break;
             case Constant.Right:
-                if (index % 4 == 3) return false;
+                if (index%4 == 3 || map[index + 1].CompareTag("Obstacle")) return false;
                 break;
             default:
                 break;
@@ -114,7 +117,6 @@ public class GameManager : MonoBehaviour
 
     void PolicyEvaluation()
     {
-        Debug.Log("Play");
         float delta = 1.0f;
         while( delta > 0.1f)
         {
@@ -124,9 +126,27 @@ public class GameManager : MonoBehaviour
                 valueT1[i] = CheckReward(i) + gamma * valueT1[i + (int)action[i]];
                 delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
                 valueInstantT = valueT1;
-                Debug.Log($"One loop done, here delta : {delta}");
             }
         }
+    }
+
+    bool PolicyImprovement()
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            List<Constant> allActionForCase = new List<Constant>();
+            
+            for (int j = 0; j < 4; j++)
+            {
+                Constant move = (Constant)values.GetValue(j);
+                if (IsPossible(move, i)) allActionForCase.Add(move);
+            }
+
+            //Constant bestAction = 
+
+        }
+
+        return true;
     }
 
     // Update is called once per frame
@@ -135,6 +155,7 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.P))
         {
             PolicyEvaluation();
+            PolicyImprovement();
         }
     }
 }
