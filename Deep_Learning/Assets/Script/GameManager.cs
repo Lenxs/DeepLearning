@@ -26,6 +26,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] float[] valueT1;// instant t +1 
     [SerializeField] Constant[] action;// move foreach case
     [SerializeField] float gamma;
+
+    bool PolicyTrue = false;
     
     Constant[] values = { Constant.Bottom, Constant.Left, Constant.Right, Constant.Top, Constant.Stop };
 
@@ -115,10 +117,26 @@ public class GameManager : MonoBehaviour
         
     }
 
+    int CheckRewardForImprovement(int index, Constant movement)
+    {
+        try
+        {
+            var actionToDo = (int)movement;
+            var reward = rewards[index + actionToDo];
+            return reward;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("voici les index : " + index);
+            throw;
+        }
+
+    }
+
     void PolicyEvaluation()
     {
         float delta = 1.0f;
-        while( delta > 0.1f)
+        while( delta > 0.0001f)
         {
             delta = .0f;
             for(int i =0;i< 16; i++)
@@ -130,10 +148,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    bool PolicyImprovement()
+    void PolicyImprovement()
     {
-        for (int i = 0; i < 16; i++)
+        var temp = new Constant[15];
+
+        for (int i = 0; i < 15; i++)
         {
+            temp[i] = action[i];
             List<Constant> allActionForCase = new List<Constant>();
             
             for (int j = 0; j < 4; j++)
@@ -142,11 +163,33 @@ public class GameManager : MonoBehaviour
                 if (IsPossible(move, i)) allActionForCase.Add(move);
             }
 
-            //Constant bestAction = 
+            int[] allActionRewards = new int[allActionForCase.Count];
+
+            for (int k = 0; k < allActionForCase.Count; k++) allActionRewards[k] = CheckRewardForImprovement(i, allActionForCase[k]);
+
+            int bestRewardIndex = Array.IndexOf(allActionRewards, allActionRewards.Max());
+
+            Constant bestAction = allActionForCase[bestRewardIndex];
+
+            action[i] = bestAction;
+
+            Debug.Log("--------------------------");
+            Debug.Log($"Case {i} : nouvelle action -> {bestAction} et ancienne action -> {temp[i]} ||| Reward de l'action : {allActionRewards[bestRewardIndex]}");
+            Debug.Log("--------------------------");
 
         }
 
-        return true;
+        for (int i=0; i<15; i++)
+        {
+            if (action[i] != temp[i])
+            {
+                PolicyTrue = false;
+                return;
+            }
+        }
+
+        PolicyTrue = true;
+        return;
     }
 
     // Update is called once per frame
@@ -154,8 +197,12 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.P))
         {
-            PolicyEvaluation();
-            PolicyImprovement();
+            while(!PolicyTrue)
+            {
+                PolicyEvaluation();
+                PolicyImprovement();
+            }
+            
         }
     }
 }
