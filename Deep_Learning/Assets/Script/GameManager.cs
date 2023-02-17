@@ -29,12 +29,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] Constant[] action;// move foreach case
     [SerializeField] float gamma;
     [SerializeField] int episode;
-    [SerializeField] float epsilon;
+    [SerializeField] float epsilon = 0.5f;
 
-    int indexPlayer;
+    private int indexPlayer = 0;
     [SerializeField] int[] passageNumber;//N
     [SerializeField] int[] returns;// returns
-    [SerializeField] List<Tuple<int,Constant>> T;// T
+    [SerializeField] List<Tuple<int,Constant>> T = new List<Tuple<int, Constant>>();// T
 
 
     private int t_size_boucle;
@@ -50,6 +50,8 @@ public class GameManager : MonoBehaviour
         valueInstantT = new float[map.Length];
         valueT1 = new float[map.Length];
         action = new Constant[map.Length];
+        passageNumber = new int[map.Length];
+        returns = new int[map.Length];
 
         t_size_boucle = map.Length;
 
@@ -126,13 +128,12 @@ public class GameManager : MonoBehaviour
 
     }
 
-    int CheckReward(int index)
+    int CheckReward(int index, int movement)
     {
         try
         {
             if (map[index].CompareTag("Obstacle")) return 0;
-            var actionToDo = movements[action[index]];
-            var reward = rewards[index + actionToDo];
+            var reward = rewards[index + movement];
             return reward;
         }
         catch (Exception e)
@@ -167,7 +168,7 @@ public class GameManager : MonoBehaviour
             delta = .0f;
             for(int i =0;i< t_size_boucle; i++)
             {
-                valueT1[i] = CheckReward(i) + gamma * valueT1[i + movements[action[i]]];
+                valueT1[i] = CheckReward(i, movements[action[i]]) + gamma * valueT1[i + movements[action[i]]];
                 delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
                 valueInstantT = valueT1;
             }
@@ -229,14 +230,49 @@ public class GameManager : MonoBehaviour
         return;
     }
 
+    void EveryVisitMonteCarlo()
+    {
+        valueInstantT[victoryCase] = 1;
+        for (int i = 0; i < t_size_boucle; i++)
+        {
+            passageNumber[i] = 0;
+            returns[i] = 0;
+        }
+
+        for (int e = 1; e < episode; e++)
+        {
+            GenerateEpisode();
+            var G = 0;
+            for (int step = T.Count-1; step >= 0; step--)
+            {
+                G += rewards[T[step].Item1];//CheckReward(T[step].Item1, movements[T[step].Item2]);
+                returns[T[step].Item1] = T[step].Item1 + G;
+                passageNumber[T[step].Item1] += 1;
+            }
+        }
+
+        Debug.Log("stop");
+        
+        for (int i = 0; i < t_size_boucle; i++)
+        {
+            if (passageNumber[i] == 0) continue;
+            valueInstantT[i] = returns[i] / (float)passageNumber[i];
+        }
+    }
+    
+    #region EPISODE GENERATION
+    
     void GenerateEpisode()
     {
+        T.Clear();
+        
         indexPlayer = 0;
         int nbStep = 0;
 
-        float p = Random.Range(0f,1f);
-        while(indexPlayer != victoryCase || nbStep < 20)
+        
+        while(nbStep < 1000 && indexPlayer != victoryCase)
         {
+            float p = Random.Range(0f,1f);
             if (p < epsilon)
             {
                 Explore();
@@ -248,20 +284,37 @@ public class GameManager : MonoBehaviour
             nbStep++;
         }
         
+        if(indexPlayer == victoryCase) T.Add(new Tuple<int, Constant>(indexPlayer, action[indexPlayer]));
 
     }
 
     private void Exploit()
     {
         // follow policy
+        T.Add(new Tuple<int, Constant>(indexPlayer, action[indexPlayer]));
+        indexPlayer += movements[action[indexPlayer]];
     }
 
     private void Explore()
     {
         // follow random move without change policy
+        List<Constant> allActionForCase = new List<Constant>();
+        
+        for (int j = 0; j < 4; j++)
+        {
+            Constant move = (Constant)j;
+            if (IsPossible(move, indexPlayer)) allActionForCase.Add(move);
+        }
+
+        var randomIndex = Random.Range(0, allActionForCase.Count);
+        
+        var randomAction = allActionForCase[randomIndex];
+        
+        T.Add(new Tuple<int, Constant>(indexPlayer, randomAction));
+        indexPlayer += movements[randomAction];
     }
 
-
+    #endregion EPISODE GENERATION
 
     // Update is called once per frame
     void Update()
@@ -279,6 +332,12 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M))
         {
             StartCoroutine(MovePlayer());
+        }
+
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            EveryVisitMonteCarlo();
+            PolicyImprovement();
         }
     }
 
