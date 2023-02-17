@@ -117,12 +117,12 @@ public class GameManager : MonoBehaviour
         
     }
 
-    int CheckRewardForImprovement(int index, Constant movement)
+    float CheckValueForImprovement(int index, Constant movement)
     {
         try
         {
             var actionToDo = (int)movement;
-            var reward = rewards[index + actionToDo];
+            var reward = valueInstantT[index + actionToDo];
             return reward;
         }
         catch (Exception e)
@@ -163,18 +163,18 @@ public class GameManager : MonoBehaviour
                 if (IsPossible(move, i)) allActionForCase.Add(move);
             }
 
-            int[] allActionRewards = new int[allActionForCase.Count];
+            float[] allActionValues = new float[allActionForCase.Count];
 
-            for (int k = 0; k < allActionForCase.Count; k++) allActionRewards[k] = CheckRewardForImprovement(i, allActionForCase[k]);
+            for (int k = 0; k < allActionForCase.Count; k++) allActionValues[k] = CheckValueForImprovement(i, allActionForCase[k]);
 
-            int bestRewardIndex = Array.IndexOf(allActionRewards, allActionRewards.Max());
+            int bestValueIndex = Array.IndexOf(allActionValues, allActionValues.Max());
 
-            Constant bestAction = allActionForCase[bestRewardIndex];
+            Constant bestAction = allActionForCase[bestValueIndex];
 
             action[i] = bestAction;
 
             Debug.Log("--------------------------");
-            Debug.Log($"Case {i} : nouvelle action -> {bestAction} et ancienne action -> {temp[i]} ||| Reward de l'action : {allActionRewards[bestRewardIndex]}");
+            Debug.Log($"Case {i} : nouvelle action -> {bestAction} et ancienne action -> {temp[i]} ||| Reward de l'action : {allActionValues[bestValueIndex]}");
             Debug.Log("--------------------------");
 
         }
