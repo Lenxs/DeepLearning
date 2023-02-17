@@ -28,6 +28,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] float[] valueT1;// instant t +1 
     [SerializeField] Constant[] action;// move foreach case
     [SerializeField] float gamma;
+    [SerializeField] int episode;
+    [SerializeField] float epsilon;
+
+    int indexPlayer;
+    [SerializeField] int[] passageNumber;//N
+    [SerializeField] int[] returns;// returns
+    [SerializeField] List<Tuple<int,Constant>> T;// T
+
 
     private int t_size_boucle;
 
@@ -220,6 +228,40 @@ public class GameManager : MonoBehaviour
         PolicyTrue = true;
         return;
     }
+
+    void GenerateEpisode()
+    {
+        indexPlayer = 0;
+        int nbStep = 0;
+
+        float p = Random.Range(0f,1f);
+        while(indexPlayer != victoryCase || nbStep < 20)
+        {
+            if (p < epsilon)
+            {
+                Explore();
+            }
+            else
+            {
+                Exploit();
+            }
+            nbStep++;
+        }
+        
+
+    }
+
+    private void Exploit()
+    {
+        // follow policy
+    }
+
+    private void Explore()
+    {
+        // follow random move without change policy
+    }
+
+
 
     // Update is called once per frame
     void Update()
