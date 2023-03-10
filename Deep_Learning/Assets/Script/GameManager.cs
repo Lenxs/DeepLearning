@@ -36,13 +36,18 @@ public class GameManager : MonoBehaviour
     [SerializeField] int[] returns;// returns
     [SerializeField] List<Tuple<int,Constant>> T = new List<Tuple<int, Constant>>();// T
 
-
+    
     private int t_size_boucle;
 
     bool PolicyTrue = false;
 
     private Dictionary<Constant, int> movements = new Dictionary<Constant, int>();
-
+    
+    private float[,] Q;
+    private int previousState;
+    private int previousAction;
+    
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -136,9 +141,9 @@ public class GameManager : MonoBehaviour
             var reward = rewards[index + movement];
             return reward;
         }
-        catch (Exception e)
+        catch (System.IndexOutOfRangeException e)
         {
-            Console.WriteLine("voici les index : " + index );
+            Debug.Log("voici les index : " + index );
             throw;
         }
         
@@ -152,9 +157,9 @@ public class GameManager : MonoBehaviour
             var reward = valueInstantT[index + actionToDo];
             return reward;
         }
-        catch (Exception e)
+        catch (System.IndexOutOfRangeException e)
         {
-            Console.WriteLine("voici les index : " + index);
+            Debug.Log("voici les index : " + index);
             throw;
         }
 
@@ -170,8 +175,9 @@ public class GameManager : MonoBehaviour
             {
                 valueT1[i] = CheckReward(i, movements[action[i]]) + gamma * valueT1[i + movements[action[i]]];
                 delta = MathF.Max(delta,Mathf.Abs(valueInstantT[i] - valueT1[i]));
-                valueInstantT = valueT1;
+              
             }
+            valueInstantT = valueT1;
         }
     }
 
@@ -339,6 +345,12 @@ public class GameManager : MonoBehaviour
             EveryVisitMonteCarlo();
             PolicyImprovement();
         }
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            ValueIterationSARSA();
+            //PolicyImprovement();
+        }
     }
 
     private IEnumerator MovePlayer()
@@ -346,10 +358,43 @@ public class GameManager : MonoBehaviour
         while (playerPos != victoryCase)
         {
             yield return new WaitForSeconds(1);
-            var positionToGo = map[playerPos + movements[action[playerPos]]];
+            var positionToGo = map[playerPos + movements[(Constant)action[playerPos]]];
             Player.transform.position = positionToGo.transform.position;
             playerPos = Array.IndexOf(map, positionToGo);
         }
         Debug.Log("VICTOIRE");
     }
+    
+    void ValueIterationSARSA()
+    {
+        int state = playerPos;
+        int actionIndex = (int)action[state];
+        float reward = CheckReward(state, movements[(Constant)actionIndex]);
+
+        // Choose next action
+        int nextActionIndex = (-1);
+        if (Random.value < epsilon)
+        {
+            nextActionIndex = Random.Range(0, 4);
+        }
+        else
+        {
+            nextActionIndex = (int)action[state];
+        }
+        float nextReward = CheckReward(state, movements[(Constant)nextActionIndex]);
+
+        // Update Q value
+        float Qsa = valueInstantT[state];
+        float Qsaprime = valueInstantT[state + movements[(Constant)nextActionIndex]];
+        float delta = reward + gamma * Qsaprime - Qsa;
+        float alpha = 0;
+        valueInstantT[state] += alpha * delta;
+
+        // Update state and action
+        playerPos = state + movements[(Constant)nextActionIndex];
+        actionIndex = (int)nextActionIndex;
+    }
+    
+    
+    
 }
